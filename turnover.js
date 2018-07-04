@@ -54,7 +54,7 @@ window.onload = function () {
       else if (e.keyCode >= 37 && e.keyCode <= 40) // Left, Up, Right, Down
         directionKeyDown(e.keyCode);
     }
-  }; 
+  };
 
   // first-time reset board
   resetBoard();
@@ -92,7 +92,7 @@ function directionKeyDown(keyCode) {
 
   var dir = keyCode - 37;
   if (isSelecting) {
-    var nextPos = { i : curPos.i + arMoves[dir].i, j : curPos.j + arMoves[dir].j };
+    var nextPos = { i: curPos.i + arMoves[dir].i, j: curPos.j + arMoves[dir].j };
     if (checkBound(nextPos)) {
       var prevPos = curPos;
       curPos = nextPos;
@@ -100,7 +100,7 @@ function directionKeyDown(keyCode) {
       drawSelectedAndCurrentSquares();
     }
   } else {
-    var nextPos = { i : curPos.i + arMoves[dir].i, j : curPos.j + arMoves[dir].j };
+    var nextPos = { i: curPos.i + arMoves[dir].i, j: curPos.j + arMoves[dir].j };
     if (checkBound(nextPos)) {
       var prevPos = curPos;
       curPos = nextPos;
@@ -135,7 +135,7 @@ function resetBoard() {
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
       drawSquareBG({ i: i, j: j });
-  
+
   // draw select & current squrares
   drawSelectedAndCurrentSquares();
 }
@@ -185,16 +185,6 @@ function redrawSquaresBG(arPos) {
     drawSquareBG(arPos[i]);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Utility functions
-///////////////////////////////////////////////////////////////////////////////
-function xy2pos(xy) {
-  return {
-    i: Math.floor(xy.x / sz),
-    j: Math.floor(xy.y / sz)
-  };
-}
-
 function pos2xy(pos) {
   return {
     x: pos.i * sz,
@@ -202,18 +192,15 @@ function pos2xy(pos) {
   }
 }
 
-function checkBound(pos) {
-  return pos.i >= 0 && pos.i < maxx && pos.j >= 0 && pos.j < maxy;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Logic functions
 ///////////////////////////////////////////////////////////////////////////////
 function initSquares() {
+  arSquares = [], arSelected = [], curPos = { i: 0, j: 0 };
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = [];
     for (var j = 0; j < maxy; ++j)
-      arSquares[i][j] = createSquare(Math.random() < rate ? ST_BLACK : ST_NONE);
+      arSquares[i][j] = createSquare(!isBoundary({i, j}) && Math.random() < rate ? ST_BLACK : ST_NONE);
   }
 }
 
@@ -231,4 +218,12 @@ function isDone() {
         return false;
   }
   return true;
+}
+
+function checkBound(pos) {
+  return pos.i >= 0 && pos.i < maxx && pos.j >= 0 && pos.j < maxy;
+}
+
+function isBoundary(pos) {
+  return pos.i == 0 || pos.j == 0 || pos.i == maxx - 1 || pos.j == maxy - 1;
 }
