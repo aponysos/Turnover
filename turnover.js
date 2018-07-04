@@ -1,29 +1,23 @@
 var maxx, maxy, rate;
-var sz = 20, tipsPadding = 4;
-var inMaxx, inMaxy, btnReset;
-var elemBoard, ctx;
-var arSquares = [], blackSquares = [], selectedSquares = [];
+var arSquares = [], arSelected = [];
+var curPos = { i: 0, j: 0 };
+var isSelecting = false;
+
 const ST_NONE = 0;
-const ST_MINE = -1;
+const ST_BLACK = 1;
+const ST_SELECTED = 2;
+const ST_CURRENT = 3;
 const arMoves = [
-  { i: -1, j: -1 },
-  { i: 0, j: -1 },
-  { i: 1, j: -1 },
-  { i: 1, j: 0 },
-  { i: 1, j: 1 },
-  { i: 0, j: 1 },
-  { i: -1, j: 1 },
-  { i: -1, j: 0 }
-];
-const bgStyle = "#FFFFFF";
-const tipStyles = [
-  "#C0C0C0", // 0
-  "#000080", "#008000", "#800000",
-  "#008080", "#800080", "#808000",
-  "#004040", "#400040", "#404000"
+  { i: -1, j: 0 },  // left
+  { i: 0, j: -1 },  // up
+  { i: 1, j: 0 },   // right
+  { i: 0, j: 1 }    // down
 ];
 
-var curPos = { i: 0, j: 0 };
+var inMaxx, inMaxy, btnReset;
+var elemBoard, ctx;
+
+var sz = 20, tipsPadding = 4;
 
 ///////////////////////////////////////////////////////////////////////////////
 // window loader
@@ -49,6 +43,7 @@ window.onload = function () {
     e.preventDefault();
   };
 
+  // register keydown events
   document.onkeydown = function (event) {
     var e = event || window.event || arguments.callee.caller.arguments[0];
     if (e) {
@@ -70,14 +65,46 @@ window.onload = function () {
 ///////////////////////////////////////////////////////////////////////////////
 function enterKeyDown() {
   console.log("enterKeyDown: " + curPos.i + ", " + curPos.j);
+
+  if (isSelecting) {
+    isSelecting = false;
+    arSelected = [];
+  } else {
+    isSelecting = true;
+    arSelected.push(curPos);
+  }
+  drawSelectedSquares();
 }
 
 function escKeyDown() {
   console.log("escKeyDown: " + curPos.i + ", " + curPos.j);
+
+  isSelecting = false;
+  arSelected = [];
+  drawSelectedSquares();
 }
 
 function directionKeyDown(keyCode) {
   console.log("directionKeyDown: " + curPos.i + ", " + curPos.j + " ", keyCode);
+
+  var dir = keyCode - 37;
+  if (isSelecting) {
+    var nextPos = { i : curPos.i + arMoves[dir].i, j : curPos.j + arMoves[dir].j };
+    if (checkBound(nextPos)) {
+      var prevPos = curPos;
+      curPos = nextPos;
+      arSelected.push(curPos);
+      drawSelectedSquares();
+    }
+  } else {
+    var nextPos = { i : curPos.i + arMoves[dir].i, j : curPos.j + arMoves[dir].j };
+    if (checkBound(nextPos)) {
+      var prevPos = curPos;
+      curPos = nextPos;
+      drawSquareBG(prevPos);
+      drawSelectedSquares();
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -85,8 +112,8 @@ function directionKeyDown(keyCode) {
 ///////////////////////////////////////////////////////////////////////////////
 function resetBoard() {
   // read maxx & maxy from inputs
-  maxx = inMaxx.value + 2;
-  maxy = inMaxy.value + 2;
+  maxx = inMaxx.value;
+  maxy = inMaxy.value;
   rate = inRate.value;
 
   console.log("resetBoard: maxx = " + maxx + ", maxy = " + maxy);
@@ -98,11 +125,15 @@ function resetBoard() {
   // init squares
   initSquares();
 
-  // draw the board & all squares
+  // draw the board
   drawBoard();
+
+  // draw all squares BG
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
-      drawSquare({ i: i, j: j });
+      drawSquareBG({ i: i, j: j });
+  
+  drawSelectedSquares();
 }
 
 function drawBoard() {
@@ -121,63 +152,33 @@ function drawBoard() {
   ctx.stroke();
 }
 
-function drawSquares(arPos) {
-  for (var pos in arPos)
-    drawSquare(arPos[pos]);
-}
-
-function drawSquare(pos) {
-  var sq = arSquares[pos.i][pos.j];
-  var tip = '';
-  if (sq.revealed)
-    tip = (sq.state == ST_MINE ? '*' : sq.state);
-  else if (sq.flag)
-    tip = 'F';
-
-  drawTip(pos, tip);
-}
-
-function drawTip(pos, tip) {
-  var sq = arSquares[pos.i][pos.j];
-  var xy = pos2xy(pos);
-
-  ctx.fillStyle = bgStyle;
-  ctx.fillRect(xy.x, xy.y, sz - 1, sz - 1);
-  ctx.font = "bold 18px 微软雅黑";
-  ctx.fillStyle = getTipStyle(tip);
-  ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
-}
-
-function getTipStyle(tip) {
-  switch (tip) {
-    case 'F':
-      return "red";
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-      return tipStyles[tip];
-    default:
-      return "black";
+function drawSelectedSquares() {
+  for (var i in arSelected) {
+    drawSquareBG(arSelected[i]);
+    drawSquareTips(arSelected[i], false);
   }
+
+  drawSquareTips(curPos, true);
+}
+
+function drawSquareBG(pos) {
+  var xy = pos2xy(pos);
+  var sq = arSquares[pos.i][pos.j];
+  ctx.fillStyle = sq.state == ST_NONE ? "#FFFFFF" : "#CCCCCC";
+  ctx.fillRect(xy.x, xy.y, sz - 1, sz - 1);
+}
+
+function drawSquareTips(pos, isCur) {
+  var xy = pos2xy(pos);
+  var tip = isCur ? 'C' : 'S';
+  ctx.font = "bold 18px 微软雅黑";
+  ctx.fillStyle = isCur ? "blue" : "red";
+  ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Utility functions
 ///////////////////////////////////////////////////////////////////////////////
-function getCanvasXY(canvas, x, y) {
-  var rect = canvas.getBoundingClientRect();
-  return {
-    x: Math.floor((x - rect.left) * (canvas.width / rect.width)),
-    y: Math.floor((y - rect.top) * (canvas.height / rect.height))
-  };
-}
-
 function xy2pos(xy) {
   return {
     i: Math.floor(xy.x / sz),
@@ -196,98 +197,29 @@ function checkBound(pos) {
   return pos.i >= 0 && pos.i < maxx && pos.j >= 0 && pos.j < maxy;
 }
 
-function getRedrawSquares(stack, redraw) {
-  while (stack.length > 0) {
-    var curPos = stack.pop();
-    var curSq = arSquares[curPos.i][curPos.j];
-    if (!curSq.revealed) {
-      // reveal current square
-      revealSquare(curSq);
-      if (!redraw.indexOf(curPos) > -1)
-        redraw.push(curPos);
-      // push ajacent squares
-      if (curSq.state == ST_NONE)
-        for (var m in arMoves) {
-          var nextPos = { i: curPos.i + arMoves[m].i, j: curPos.j + arMoves[m].j };
-          if (checkBound(nextPos))
-            stack.push(nextPos);
-        }
-    }
-  }
-}
 ///////////////////////////////////////////////////////////////////////////////
 // Logic functions
 ///////////////////////////////////////////////////////////////////////////////
 function initSquares() {
-  // pass 1: random black squares
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = [];
     for (var j = 0; j < maxy; ++j)
-      arSquares[i][j] = createSquare(Math.random() < rate ? ST_MINE : ST_NONE);
-  }
-
-  // pass 2: count ajacent mines
-  for (var i = 0; i < maxx; ++i) {
-    for (var j = 0; j < maxy; ++j)
-      if (arSquares[i][j].state == ST_NONE)
-        arSquares[i][j].state = countAjacentMines({ i: i, j: j });
+      arSquares[i][j] = createSquare(Math.random() < rate ? ST_BLACK : ST_NONE);
   }
 }
 
 function createSquare(state) {
   var sq = new Object();
   sq.state = state;
-  sq.revealed = false;
-  sq.flag = false;
   return sq;
 }
 
-function countAjacentMines(pos) {
-  return countAjacent(pos, function (next) {
-    var sq = arSquares[next.i][next.j];
-    return sq.state == ST_MINE;
-  });
-}
-
-function countAjacentFlagsAndMines(pos) {
-  return countAjacent(pos, function (next) {
-    var sq = arSquares[next.i][next.j];
-    return (sq.revealed && sq.state == ST_MINE) || (!sq.revealed && sq.flag);
-  });
-}
-
-function countAjacent(pos, pred) {
-  var count = 0;
-  for (var m in arMoves) {
-    var next = { i: pos.i + arMoves[m].i, j: pos.j + arMoves[m].j };
-    if (checkBound(next))
-      if (pred(next))
-        ++count;
-  }
-  return count;
-}
-
-function checkBombOrDone() {
-  if (isBombed())
-    alert("Bombed!");
-  else if (isDone())
-    alert("Done!");
-}
-
-function isBombed() {
-  for (var i = 0; i < maxx; ++i)
-    for (var j = 0; j < maxy; ++j)
-      if (arSquares[i][j].revealed && arSquares[i][j].state == ST_MINE)
-        return true;
-  return false;
-}
-
 function isDone() {
-  for (var i = 0; i < maxx; ++i)
-    for (var j = 0; j < maxy; ++j)
-      if (!arSquares[i][j].revealed &&
-        (!arSquares[i][j].flag || arSquares[i][j].state != ST_MINE)
-      )
+  for (var j = 0; j < maxy; ++j) {
+    var isBlack = false;
+    for (var i = 0; i < maxx; ++i)
+      if (arSquares[i][j].state == ST_BLACK)
         return false;
+  }
   return true;
 }
