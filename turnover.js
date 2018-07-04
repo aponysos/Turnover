@@ -66,14 +66,14 @@ window.onload = function () {
 function enterKeyDown() {
   console.log("enterKeyDown: " + curPos.i + ", " + curPos.j);
 
-  if (isSelecting) {
-    // turn over
-  } else {
+  if (isSelecting && isDone())
+      alert("Done!");
+  else {
     isSelecting = true;
     arSelected.push(curPos);
-  }
 
-  drawSelectedAndCurrentSquares();
+    drawSelectedAndCurrentSquares();
+  }
 }
 
 function escKeyDown() {
@@ -196,7 +196,7 @@ function pos2xy(pos) {
 // Logic functions
 ///////////////////////////////////////////////////////////////////////////////
 function initSquares() {
-  arSquares = [], arSelected = [], curPos = { i: 0, j: 0 };
+  arSquares = [], arSelected = [], curPos = { i: 0, j: 0 }, isSelecting = false;
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = [];
     for (var j = 0; j < maxy; ++j)
@@ -211,12 +211,30 @@ function createSquare(state) {
 }
 
 function isDone() {
-  for (var j = 0; j < maxy; ++j) {
-    var isBlack = false;
-    for (var i = 0; i < maxx; ++i)
-      if (arSquares[i][j].state == ST_BLACK)
+  var arIsNone = [];
+
+  // copy states
+  for (var i = 0; i < maxx; ++i) {
+    arIsNone[i] = [];
+    for (var j = 0; j < maxy; ++j)
+      arIsNone[i][j] = arSquares[i][j].state == ST_NONE;      
+  }
+
+  // turn over states
+  for (var i in arSelected) {
+    var pos = arSelected[i];
+    if (!isBoundary(pos))
+      arIsNone[pos.i][pos.j] = !arIsNone[pos.i][pos.j];
+  }
+  
+  // check rows
+  for (var j = 1; j < maxy - 1; ++j) {
+    var isNone = arIsNone[1][j];
+    for (var i = 1; i < maxx - 1; ++i)
+      if (arIsNone[i][j] != isNone)
         return false;
   }
+
   return true;
 }
 
