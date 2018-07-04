@@ -67,21 +67,24 @@ function enterKeyDown() {
   console.log("enterKeyDown: " + curPos.i + ", " + curPos.j);
 
   if (isSelecting) {
-    isSelecting = false;
-    arSelected = [];
+    // turn over
   } else {
     isSelecting = true;
     arSelected.push(curPos);
   }
-  drawSelectedSquares();
+
+  drawSelectedAndCurrentSquares();
 }
 
 function escKeyDown() {
   console.log("escKeyDown: " + curPos.i + ", " + curPos.j);
 
+  redrawSquaresBG(arSelected);
+
   isSelecting = false;
   arSelected = [];
-  drawSelectedSquares();
+
+  drawSelectedAndCurrentSquares();
 }
 
 function directionKeyDown(keyCode) {
@@ -94,7 +97,7 @@ function directionKeyDown(keyCode) {
       var prevPos = curPos;
       curPos = nextPos;
       arSelected.push(curPos);
-      drawSelectedSquares();
+      drawSelectedAndCurrentSquares();
     }
   } else {
     var nextPos = { i : curPos.i + arMoves[dir].i, j : curPos.j + arMoves[dir].j };
@@ -102,7 +105,7 @@ function directionKeyDown(keyCode) {
       var prevPos = curPos;
       curPos = nextPos;
       drawSquareBG(prevPos);
-      drawSelectedSquares();
+      drawSelectedAndCurrentSquares();
     }
   }
 }
@@ -133,7 +136,8 @@ function resetBoard() {
     for (var j = 0; j < maxy; ++j)
       drawSquareBG({ i: i, j: j });
   
-  drawSelectedSquares();
+  // draw select & current squrares
+  drawSelectedAndCurrentSquares();
 }
 
 function drawBoard() {
@@ -152,15 +156,6 @@ function drawBoard() {
   ctx.stroke();
 }
 
-function drawSelectedSquares() {
-  for (var i in arSelected) {
-    drawSquareBG(arSelected[i]);
-    drawSquareTips(arSelected[i], false);
-  }
-
-  drawSquareTips(curPos, true);
-}
-
 function drawSquareBG(pos) {
   var xy = pos2xy(pos);
   var sq = arSquares[pos.i][pos.j];
@@ -174,6 +169,20 @@ function drawSquareTips(pos, isCur) {
   ctx.font = "bold 18px 微软雅黑";
   ctx.fillStyle = isCur ? "blue" : "red";
   ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
+}
+
+function drawSelectedAndCurrentSquares() {
+  for (var i in arSelected) {
+    drawSquareBG(arSelected[i]);
+    drawSquareTips(arSelected[i], false);
+  }
+
+  drawSquareTips(curPos, true);
+}
+
+function redrawSquaresBG(arPos) {
+  for (var i in arPos)
+    drawSquareBG(arPos[i]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
