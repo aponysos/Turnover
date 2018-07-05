@@ -2,8 +2,7 @@
 var maxx, maxy, rate;
 var arSquares = [], arSelected = [];
 var curPos = { i: 0, j: 0 };
-var isSelecting = false;
-// NOTE : curPos is always on top of arSelected if isSelecting == true
+// NOTE : curPos is always on top of arSelected if isSelecting() == true
 
 // UI var
 var inMaxx, inMaxy, inRate, btnReset;
@@ -12,8 +11,6 @@ var elemBoard, ctx;
 // logic const
 const ST_NONE = 0;
 const ST_BLACK = 1;
-const ST_SELECTED = 2;
-const ST_CURRENT = 3;
 const arMoves = [
   { i: -1, j: 0 },  // left
   { i: 0, j: -1 },  // up
@@ -84,13 +81,11 @@ function resetBoard() {
 function enterKeyDown() {
   console.log("enterKeyDown: " + curPos.i + ", " + curPos.j);
 
-  if (isSelecting) {
+  if (isSelecting()) {
     if (isDone())
       alert("Done!");
-  } else {
+  } else
     arSelected.push(curPos);
-    isSelecting = true;
-  }
 }
 
 function escKeyDown() {
@@ -108,7 +103,7 @@ function directionKeyDown(keyCode) {
   if (!checkBound(nextPos))
     return;
 
-  if (isSelecting) {
+  if (isSelecting()) {
     var i = indexOfSelected(nextPos);
     if (i < 0) // move on
       arSelected.push(nextPos);
@@ -213,7 +208,7 @@ function pos2xy(pos) {
 // Logic
 ///////////////////////////////////////////////////////////////////////////////
 function initSquares() {
-  arSquares = [], arSelected = [], curPos = { i: 0, j: 0 }, isSelecting = false;
+  arSquares = [], arSelected = [], curPos = { i: 0, j: 0 };
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = [];
     for (var j = 0; j < maxy; ++j)
@@ -263,9 +258,12 @@ function isBoundary(pos) {
   return pos.i == 0 || pos.j == 0 || pos.i == maxx - 1 || pos.j == maxy - 1;
 }
 
+function isSelecting() {
+  return arSelected.length > 0;
+}
+
 function cancelSelecting() {
   arSelected = [];
-  isSelecting = false;
 }
 
 function indexOfSelected(pos) {
