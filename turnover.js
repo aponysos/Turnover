@@ -5,7 +5,7 @@ var curPos = { i: 0, j: 0 };
 var isSelecting = false;
 
 // UI var
-var inMaxx, inMaxy, btnReset;
+var inMaxx, inMaxy, inRate, btnReset;
 var elemBoard, ctx;
 
 // logic const
