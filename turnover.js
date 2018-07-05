@@ -151,6 +151,15 @@ function drawBoard() {
     ctx.lineTo(maxx * sz, i * sz);
   }
   ctx.stroke();
+
+  ctx.strokeStyle = "red";
+  ctx.beginPath();
+  ctx.moveTo(sz, sz);
+  ctx.lineTo((maxx - 1) * sz, sz);
+  ctx.lineTo((maxx - 1) * sz, (maxy - 1) * sz);
+  ctx.lineTo(sz, (maxy - 1) * sz);
+  ctx.lineTo(sz, sz);
+  ctx.stroke();
 }
 
 function drawSelectedAndCurrentSquares() {
