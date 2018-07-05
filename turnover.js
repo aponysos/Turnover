@@ -71,11 +71,6 @@ function enterKeyDown() {
   if (isSelecting) {
     if (isDone())
       alert("Done!");
-    else {
-      redrawSquaresBG(arSelected);
-      isSelecting = false;
-      arSelected = [];
-    }
   } else {
     isSelecting = true;
     arSelected.push(curPos);
@@ -86,29 +81,30 @@ function escKeyDown() {
   console.log("escKeyDown: " + curPos.i + ", " + curPos.j);
 
   redrawSquaresBG(arSelected);
-  isSelecting = false;
-  arSelected = [];
+  clearSelected()
 }
 
 function directionKeyDown(keyCode) {
   console.log("directionKeyDown: " + curPos.i + ", " + curPos.j + " ", keyCode);
 
   var dir = keyCode - 37;
+  var nextPos = { i: curPos.i + arMoves[dir].i, j: curPos.j + arMoves[dir].j };
+  if (!checkBound(nextPos))
+    return;
+
   if (isSelecting) {
-    var nextPos = { i: curPos.i + arMoves[dir].i, j: curPos.j + arMoves[dir].j };
-    if (checkBound(nextPos)) {
-      var prevPos = curPos;
-      curPos = nextPos;
-      arSelected.push(curPos);
-    }
-  } else {
-    var nextPos = { i: curPos.i + arMoves[dir].i, j: curPos.j + arMoves[dir].j };
-    if (checkBound(nextPos)) {
-      var prevPos = curPos;
-      curPos = nextPos;
-      drawSquareBG(prevPos);
-    }
-  }
+    var i = indexOfSelected(nextPos);
+    if (i < 0) // move on
+      arSelected.push(nextPos);
+    else if (i == arSelected.length - 2) { // move back
+      drawSquareBG(curPos);
+      arSelected.pop();
+    } else if (i > 0) // stay
+      return;
+  } else
+    drawSquareBG(curPos);
+
+  curPos = nextPos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -157,21 +153,6 @@ function drawBoard() {
   ctx.stroke();
 }
 
-function drawSquareBG(pos) {
-  var xy = pos2xy(pos);
-  var sq = arSquares[pos.i][pos.j];
-  ctx.fillStyle = sq.state == ST_NONE ? "#FFFFFF" : "#CCCCCC";
-  ctx.fillRect(xy.x, xy.y, sz - 1, sz - 1);
-}
-
-function drawSquareTips(pos, isCur) {
-  var xy = pos2xy(pos);
-  var tip = isCur ? 'C' : 'S';
-  ctx.font = "bold 18px 微软雅黑";
-  ctx.fillStyle = isCur ? "blue" : "red";
-  ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
-}
-
 function drawSelectedAndCurrentSquares() {
   for (var i in arSelected) {
     drawSquareBG(arSelected[i]);
@@ -184,6 +165,21 @@ function drawSelectedAndCurrentSquares() {
 function redrawSquaresBG(arPos) {
   for (var i in arPos)
     drawSquareBG(arPos[i]);
+}
+
+function drawSquareBG(pos) {
+  var xy = pos2xy(pos);
+  var sq = arSquares[pos.i][pos.j];
+  ctx.fillStyle = sq.state == ST_NONE ? "white" : "grey";
+  ctx.fillRect(xy.x, xy.y, sz - 1, sz - 1);
+}
+
+function drawSquareTips(pos, isCur) {
+  var xy = pos2xy(pos);
+  var tip = isCur ? 'C' : 'S';
+  ctx.font = "bold 18px 微软雅黑";
+  ctx.fillStyle = isCur ? "blue" : "red";
+  ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
 }
 
 function pos2xy(pos) {
@@ -201,7 +197,7 @@ function initSquares() {
   for (var i = 0; i < maxx; ++i) {
     arSquares[i] = [];
     for (var j = 0; j < maxy; ++j)
-      arSquares[i][j] = createSquare(!isBoundary({i, j}) && Math.random() < rate ? ST_BLACK : ST_NONE);
+      arSquares[i][j] = createSquare(!isBoundary({ i, j }) && Math.random() < rate ? ST_BLACK : ST_NONE);
   }
 }
 
@@ -218,7 +214,7 @@ function isDone() {
   for (var i = 0; i < maxx; ++i) {
     arIsNone[i] = [];
     for (var j = 0; j < maxy; ++j)
-      arIsNone[i][j] = arSquares[i][j].state == ST_NONE;      
+      arIsNone[i][j] = arSquares[i][j].state == ST_NONE;
   }
 
   // turn over states
@@ -227,7 +223,7 @@ function isDone() {
     if (!isBoundary(pos))
       arIsNone[pos.i][pos.j] = !arIsNone[pos.i][pos.j];
   }
-  
+
   // check rows
   for (var j = 1; j < maxy - 1; ++j) {
     var isNone = arIsNone[1][j];
@@ -245,4 +241,16 @@ function checkBound(pos) {
 
 function isBoundary(pos) {
   return pos.i == 0 || pos.j == 0 || pos.i == maxx - 1 || pos.j == maxy - 1;
+}
+
+function clearSelected() {
+  isSelecting = false;
+  arSelected = [];
+}
+
+function indexOfSelected(pos) {
+  for (var i = 0; i < arSelected.length; ++i)
+    if (arSelected[i].i == pos.i && arSelected[i].j == pos.j)
+      return i;
+  return -1;
 }
