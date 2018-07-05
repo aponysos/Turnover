@@ -3,6 +3,7 @@ var maxx, maxy, rate;
 var arSquares = [], arSelected = [];
 var curPos = { i: 0, j: 0 };
 var isSelecting = false;
+// NOTE : curPos is always on top of arSelected if isSelecting == true
 
 // UI var
 var inMaxx, inMaxy, inRate, btnReset;
@@ -62,6 +63,21 @@ window.onload = function () {
   resetBoard();
 };
 
+function resetBoard() {
+  // read maxx & maxy from inputs
+  maxx = inMaxx.value;
+  maxy = inMaxy.value;
+  rate = inRate.value;
+
+  console.log("resetBoard: maxx = " + maxx + ", maxy = " + maxy + ", rate = " + rate);
+
+  // init squares
+  initSquares();
+
+  // draw board
+  redrawBoard();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // events handlers
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,16 +88,16 @@ function enterKeyDown() {
     if (isDone())
       alert("Done!");
   } else {
-    isSelecting = true;
     arSelected.push(curPos);
+    isSelecting = true;
   }
 }
 
 function escKeyDown() {
   console.log("escKeyDown: " + curPos.i + ", " + curPos.j);
 
-  redrawSquaresBG(arSelected);
-  clearSelected()
+  drawSquaresBG(arSelected);
+  cancelSelecting();
 }
 
 function directionKeyDown(keyCode) {
@@ -99,36 +115,27 @@ function directionKeyDown(keyCode) {
     else if (i == arSelected.length - 2) { // move back
       drawSquareBG(curPos);
       arSelected.pop();
-    } else if (i > 0) // stay
+    } else // stay
       return;
   } else
     drawSquareBG(curPos);
 
+  // change current position
   curPos = nextPos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // UI
 ///////////////////////////////////////////////////////////////////////////////
-function resetBoard() {
-  // read maxx & maxy from inputs
-  maxx = inMaxx.value;
-  maxy = inMaxy.value;
-  rate = inRate.value;
-
-  console.log("resetBoard: maxx = " + maxx + ", maxy = " + maxy);
-
+function redrawBoard() {
   // set board's size
   elemBoard.width = sz * maxx;
   elemBoard.height = sz * maxy;
 
-  // init squares
-  initSquares();
+  // draw the board lines
+  drawBoardLines();
 
-  // draw the board
-  drawBoard();
-
-  // draw all squares BG
+  // draw squares BG
   for (var i = 0; i < maxx; ++i)
     for (var j = 0; j < maxy; ++j)
       drawSquareBG({ i: i, j: j });
@@ -137,7 +144,7 @@ function resetBoard() {
   drawSelectedAndCurrentSquares();
 }
 
-function drawBoard() {
+function drawBoardLines() {
   ctx.strokeStyle = "black";
   ctx.beginPath();
   // vertical
@@ -152,6 +159,7 @@ function drawBoard() {
   }
   ctx.stroke();
 
+  // inner rectangle
   ctx.strokeStyle = "red";
   ctx.beginPath();
   ctx.moveTo(sz, sz);
@@ -163,15 +171,18 @@ function drawBoard() {
 }
 
 function drawSelectedAndCurrentSquares() {
-  for (var i in arSelected) {
-    drawSquareBG(arSelected[i]);
-    drawSquareTips(arSelected[i], false);
-  }
+  // draw selected squares BG
+  drawSquaresBG(arSelected);
 
+  // draw selected squares TIPS
+  for (var i in arSelected)
+    drawSquareTips(arSelected[i], false);
+
+  // draw current squares TIPS
   drawSquareTips(curPos, true);
 }
 
-function redrawSquaresBG(arPos) {
+function drawSquaresBG(arPos) {
   for (var i in arPos)
     drawSquareBG(arPos[i]);
 }
@@ -186,8 +197,8 @@ function drawSquareBG(pos) {
 function drawSquareTips(pos, isCur) {
   var xy = pos2xy(pos);
   var tip = isCur ? 'C' : 'S';
-  ctx.font = "bold 18px 微软雅黑";
   ctx.fillStyle = isCur ? "blue" : "red";
+  ctx.font = "bold 18px 微软雅黑";
   ctx.fillText(tip, xy.x + tipsPadding, xy.y + sz - tipsPadding);
 }
 
@@ -252,9 +263,9 @@ function isBoundary(pos) {
   return pos.i == 0 || pos.j == 0 || pos.i == maxx - 1 || pos.j == maxy - 1;
 }
 
-function clearSelected() {
-  isSelecting = false;
+function cancelSelecting() {
   arSelected = [];
+  isSelecting = false;
 }
 
 function indexOfSelected(pos) {
