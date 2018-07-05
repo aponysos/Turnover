@@ -1,8 +1,14 @@
+// logic var
 var maxx, maxy, rate;
 var arSquares = [], arSelected = [];
 var curPos = { i: 0, j: 0 };
 var isSelecting = false;
 
+// UI var
+var inMaxx, inMaxy, btnReset;
+var elemBoard, ctx;
+
+// logic const
 const ST_NONE = 0;
 const ST_BLACK = 1;
 const ST_SELECTED = 2;
@@ -14,10 +20,8 @@ const arMoves = [
   { i: 0, j: 1 }    // down
 ];
 
-var inMaxx, inMaxy, btnReset;
-var elemBoard, ctx;
-
-var sz = 20, tipsPadding = 4;
+// UI const
+const sz = 20, tipsPadding = 4;
 
 ///////////////////////////////////////////////////////////////////////////////
 // window loader
@@ -29,19 +33,14 @@ window.onload = function () {
   inRate = document.getElementById("inRate");
   btnReset = document.getElementById("btnReset");
 
-  // register button event
-  btnReset.onclick = function (e) {
-    resetBoard();
-  }
-
   // initialize board element & 2d-context
   elemBoard = document.getElementById("board");
   ctx = elemBoard.getContext("2d");
 
-  // disable context menu
-  elemBoard.oncontextmenu = function (e) {
-    e.preventDefault();
-  };
+  // register button event
+  btnReset.onclick = function (e) {
+    resetBoard();
+  }
 
   // register keydown events
   document.onkeydown = function (event) {
@@ -53,6 +52,9 @@ window.onload = function () {
         escKeyDown();
       else if (e.keyCode >= 37 && e.keyCode <= 40) // Left, Up, Right, Down
         directionKeyDown(e.keyCode);
+
+      // redraw squares
+      drawSelectedAndCurrentSquares();
     }
   };
 
@@ -66,13 +68,17 @@ window.onload = function () {
 function enterKeyDown() {
   console.log("enterKeyDown: " + curPos.i + ", " + curPos.j);
 
-  if (isSelecting && isDone())
+  if (isSelecting) {
+    if (isDone())
       alert("Done!");
-  else {
+    else {
+      redrawSquaresBG(arSelected);
+      isSelecting = false;
+      arSelected = [];
+    }
+  } else {
     isSelecting = true;
     arSelected.push(curPos);
-
-    drawSelectedAndCurrentSquares();
   }
 }
 
@@ -80,11 +86,8 @@ function escKeyDown() {
   console.log("escKeyDown: " + curPos.i + ", " + curPos.j);
 
   redrawSquaresBG(arSelected);
-
   isSelecting = false;
   arSelected = [];
-
-  drawSelectedAndCurrentSquares();
 }
 
 function directionKeyDown(keyCode) {
@@ -97,7 +100,6 @@ function directionKeyDown(keyCode) {
       var prevPos = curPos;
       curPos = nextPos;
       arSelected.push(curPos);
-      drawSelectedAndCurrentSquares();
     }
   } else {
     var nextPos = { i: curPos.i + arMoves[dir].i, j: curPos.j + arMoves[dir].j };
@@ -105,13 +107,12 @@ function directionKeyDown(keyCode) {
       var prevPos = curPos;
       curPos = nextPos;
       drawSquareBG(prevPos);
-      drawSelectedAndCurrentSquares();
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// UI functions
+// UI
 ///////////////////////////////////////////////////////////////////////////////
 function resetBoard() {
   // read maxx & maxy from inputs
@@ -193,7 +194,7 @@ function pos2xy(pos) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Logic functions
+// Logic
 ///////////////////////////////////////////////////////////////////////////////
 function initSquares() {
   arSquares = [], arSelected = [], curPos = { i: 0, j: 0 }, isSelecting = false;
