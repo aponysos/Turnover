@@ -38,6 +38,7 @@ window.onload = function () {
   // register button event
   btnReset.onclick = function (e) {
     resetBoard();
+    this.blur();
   }
 
   // register keydown events
